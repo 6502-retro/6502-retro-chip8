@@ -121,7 +121,6 @@ _init_regs:
     bne :-                  ; loop until complete.
     rts
 
-
 .rodata
 ; These are the registers for the multicolour mode
 mc_regs:

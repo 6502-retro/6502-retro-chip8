@@ -11,8 +11,9 @@ Chip8 *chip;
 void main(void) {
 
     vdp_reset();
+    vdp_colorize(BLACK);
     for (i=0;i<64;i++) {
-        plot_xy(i,32,GREY);
+        vdp_plot_xy(i,32,GREY);
     }
 
     chip = chip8_init();
