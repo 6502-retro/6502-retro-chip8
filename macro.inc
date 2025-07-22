@@ -1,4 +1,19 @@
 ; vim: set ft=asm_ca65 ts=4 sw=4 et:vdp
+.macro slow
+;    .repeat 8
+;        pha
+;        pla
+;    .endrepeat
+.endmacro
+
+.macro fast
+;    .repeat 4
+;        pha
+;        pla
+;    .endrepeat
+.endmacro
+
+
 .macro div8
     .repeat 3
         lsr
@@ -74,7 +89,7 @@
     jsr memcpySinglePage
 .endmacro
 
-.macro memset dst,val, cnt
+.macro memset dst, val, cnt
 .if cnt <= 0
     .error "memset: ivalid count: ", cnt
 .elseif cnt <= 8

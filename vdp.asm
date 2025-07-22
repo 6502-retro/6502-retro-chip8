@@ -3,7 +3,7 @@
 .include "app.inc"
 .include "macro.inc"
 
-.export _vdp_reset
+.export _vdp_reset, _vdp_set_write_addr, _vdp_set_read_addr
 
 .autoimport
 
@@ -28,7 +28,7 @@ _vdp_reset:
     ; init name table
     lda #<VDP_NAME
     ldx #>VDP_NAME
-    jsr vdp_set_write_address
+    jsr _vdp_set_write_addr
 
     lda #6
     sta v1+0
@@ -38,19 +38,11 @@ _vdp_reset:
     lda #4
     sta v1+1
 @lpline:
-;    lda #$0a
-;    jsr bios_conout
-;    lda #$0d
-;    jsr bios_conout
     ldx #32
     lda v2+0
 @lpcol:
-;    pha
-;    jsr bios_prbyte
-;    lda #' '
-;    jsr bios_conout
-;    pla
     sta VDP_RAM
+    slow
     inc
     dex
     bne @lpcol
@@ -73,11 +65,12 @@ _vdp_reset:
 vdp_clear_vram:
     lda #0                  ; A is low byte of vram write address
     ldx #0                  ; X is high byte of vram write address
-    jsr vdp_set_write_address ; set the starting address to zero.
+    jsr _vdp_set_write_addr ; set the starting address to zero.
     lda #0                  ; A has the value being written to VRAM
     ldy #0                  ; Y is the byte counter
     ldx #$3F                ; X is the page counter
 :   sta VDP_RAM             ; save A into vram
+    slow
     iny                     ; increment Y and loop until a whole page is written
     bne :-
     dex                     ; decement page counter and loop until all 0x3F
@@ -88,12 +81,22 @@ vdp_clear_vram:
 ; INPUT: A is the low byte of the VRAM address.
 ;        X is the high byte of the VRAM address.
 ; OUTPUT: VOID
-vdp_set_write_address:
+_vdp_set_write_addr:
     sta VDP_REG             ; As per the TI Programmers Guide.
+    fast
     txa
     ora #$40
     sta VDP_REG
+    fast
     rts
+
+_vdp_set_read_addr:
+    sta VDP_REG             ; As per the TI Programmers Guide.
+    fast
+    stx VDP_REG
+    fast
+    rts
+
 
 ; initialize vdp in Multicolour mode (64x48)
 vdp_init_mc:
@@ -113,9 +116,11 @@ _init_regs:
     ldy #0                  ; Y is the offset in the register table.
 :   lda (v3),y            ; load the first byte
     sta VDP_REG             ; save to VRAM
+    fast
     tya                     ; use the pointer offset to set the VDP register
     ora #$80                ; As per the TI Programmers manual.
     sta VDP_REG
+    fast
     iny
     cpy #8                  ; there are 8 registers altogether 0-7
     bne :-                  ; loop until complete.
