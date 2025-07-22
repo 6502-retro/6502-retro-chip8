@@ -3,11 +3,9 @@
 .include "app.inc"
 .include "macro.inc"
 
-.export _vdp_reset, _vdp_set_write_addr, _vdp_set_read_addr
+.export _vdp_reset, _vdp_set_write_addr, _vdp_set_read_addr, _vdp_wait
 
 .autoimport
-
-.globalzp sp
 
 .zeropage
 
@@ -103,6 +101,12 @@ vdp_init_mc:
     lda #<mc_regs
     ldx #>mc_regs
     jmp _init_regs
+
+_vdp_wait:
+    bit VDP_SYNC            ; vdp_sync is set by the interrupt handler to 0x80
+    bpl _vdp_wait
+    stz VDP_SYNC            ; an interrupt was received so set the vdp_sync var
+    rts                     ; to zero before exiting.
 
 ; Copy a table of register values to the VDP.  The table is arranged in order
 ; from REG-0 to REG-7.  Each value is set to the register of its position in the

@@ -34,3 +34,4 @@ bios_userirq_vec = $250
 bios_usernmi_vec = $252
 bios_delay_ms    = $254
 
+VDP_SYNC         = $65E
