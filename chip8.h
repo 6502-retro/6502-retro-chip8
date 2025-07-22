@@ -5,8 +5,14 @@
 
 typedef struct s_chip8 {
     bool is_running;
-    char ram[2048];
-    char fb[2048];
+    uint8_t ram[4096];
+    uint8_t fb[2048];
+    uint8_t pc;
+    uint8_t v[16];
+    uint16_t i;
+    uint16_t stack[48];
+    uint8_t delay;
+    uint8_t sound;
 }Chip8;
 
 

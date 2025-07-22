@@ -26,26 +26,15 @@ void main(void) {
             vdp_plot_xy(i, j, VDP_DARK_RED);
     }
     CLI();
-
     vdp_wait();
     vdp_flush();
 
     chip = chip8_init();
 
-    for (i=0;i<64;++i)
-        chip8_plot_xy(chip, i, 16, 1);
+    /*
+    * Process chip8 loop
+    */
 
-    for (i=0;i<32;++i)
-        chip8_plot_xy(chip, 32, i, 1);
-
-    chip8_render(chip);
-    vdp_wait();
-    vdp_flush();
-
-    for (i=0; i<60; ++i) {
-        vdp_wait();
-    }
-    chip8_clear(chip);
 
     chip8_destroy(chip);
     sfos_s_warmboot();

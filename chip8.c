@@ -12,7 +12,8 @@ Chip8* chip8_init() {
 	if (chip == NULL)
 		exit(-1);
 	else {
-		memset(chip->fb, 0, 2048);
+		memset(chip, 0, sizeof(Chip8));
+		chip->pc = 0x200;
 		return chip;
 	}
 };
@@ -28,6 +29,10 @@ void chip8_plot_xy(Chip8 *chip, uint8_t x, uint8_t y, bool p) {
 	uint8_t b = chip->fb[addr];
 
 	chip->fb[addr] = b^p;
+	if (!chip->fb[addr])
+		chip->v[0xF] = 1;
+	else
+		chip->v[0xF] = 0;
 }
 
 void chip8_render(Chip8 *chip) {
@@ -38,10 +43,12 @@ void chip8_render(Chip8 *chip) {
 	for (x=0; x<64; ++x) {
 		for (y=0; y<32; ++y) {
 			addr = (y*64)+x;
-			if (chip->fb[addr])
+			if (chip->fb[addr]) {
 				vdp_plot_xy(x, y+8, VDP_WHITE);
-			else
+			}
+			else {
 				vdp_plot_xy(x, y+8, VDP_BLACK);
+			}
 		}
 	}
 }
