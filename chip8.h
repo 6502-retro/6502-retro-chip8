@@ -15,7 +15,6 @@ typedef struct s_chip8 {
     uint8_t sound;
 }Chip8;
 
-
 Chip8 *chip8_init();
 void chip8_destroy(Chip8 *chip);
 void chip8_render(Chip8 *chip);
