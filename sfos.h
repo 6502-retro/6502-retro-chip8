@@ -13,20 +13,10 @@
 #define fcb2 (*(_fcb*)FCB2)
 #define TPA  0x800
 
-uint8_t argc;
-char *argv[8];
-char *cmd = (char*)0x301;
+extern uint8_t argc;
+extern char *argv[8];
+extern char *cmd;
 
-void parse_args(char* cmd) {
-    char *p2;
-    p2 = strtok(cmd, " ");
-
-    while (p2 && argc < 7) {
-        argv[argc++] = p2;
-        p2 = strtok('\0', " ");
-    }
-    argv[argc] = '\0';
-}
 
 typedef struct {
     uint8_t     DRIVE;

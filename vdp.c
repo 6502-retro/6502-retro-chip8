@@ -20,11 +20,11 @@ void vdp_on() {
 }
 
 void vdp_plot_xy(uint8_t x, uint8_t y, uint8_t c) {
-    uint8_t dot = 0;
-    char pix = 0;
-    uint16_t addr = 0;
+    static uint8_t dot = 0;
+    static char pix = 0;
+    static uint16_t addr = 0;
 
-    addr = 8 * (x / 2) + y % 8 + 256 * (y / 8);
+    addr = (8 * (x / 2)) + (y % 8) + (256 * (y / 8));
     dot = framebuf[addr];
     if (x & 1) // Odd columns
             pix = ((dot & 0xF0) + (c & 0x0f));
