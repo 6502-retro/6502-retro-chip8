@@ -314,7 +314,7 @@ void chip8_run(Chip8 *chip) {
 				invalid(-1, instr);
 				break;
 		}
-		vdp_wait();
+		//vdp_wait();
 
 		if (delay > 0) {
 			delay -= 1;

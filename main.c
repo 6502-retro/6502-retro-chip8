@@ -56,7 +56,6 @@ void main(void) {
     vdp_colorize(VDP_BLACK);
     CLI();
 
-    vdp_wait();
     vdp_flush(&FRAMEBUF);
 
     srand(1);
