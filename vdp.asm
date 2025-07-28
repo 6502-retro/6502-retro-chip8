@@ -4,6 +4,7 @@
 .include "macro.inc"
 
 .export _vdp_reset, _vdp_set_write_addr, _vdp_set_read_addr, _vdp_wait
+.export _vdp_flush, _vdp_xy_to_offset, _vdp_clear_pattern_table
 
 .autoimport
 
@@ -75,6 +76,26 @@ vdp_clear_vram:
     bne :-                  ; pages are written.
     rts
 
+; XA = pointer to framebuffer
+_vdp_flush:
+    sta v1+0
+    stx v1+1
+
+    lda #<VDP_PATTERN
+    ldx #>VDP_PATTERN
+    jsr _vdp_set_write_addr
+    ldx #4
+    ldy #0
+@lp:
+    lda (v1),y
+    sta VDP_RAM
+    iny
+    bne @lp
+    inc v1+1
+    dex
+    bne @lp
+    rts
+
 ; Sets the VDP internal VRAM pointer for writing.
 ; INPUT: A is the low byte of the VRAM address.
 ;        X is the high byte of the VRAM address.
@@ -93,6 +114,39 @@ _vdp_set_read_addr:
     fast
     stx VDP_REG
     fast
+    rts
+
+_vdp_clear_pattern_table:
+    lda #<VDP_PATTERN
+    ldx #>VDP_PATTERN
+    jsr _vdp_set_write_addr
+    lda #$11
+    ldy #$00
+    ldx #$04
+:   sta VDP_RAM
+    iny
+    bne :-
+    dex
+    bne :-
+    rts
+
+
+_vdp_xy_to_offset:
+    tay
+    div8
+    sta v2+1  ; Y / 8 (saved into high byte which means *256)
+    tya
+    and #$07    ; Y mod 8
+    sta v3+0 
+    txa
+    lsr         ; X / 2
+    asl
+    asl
+    asl         ; X * 8
+    clc
+    adc v3+0    ; + y % 8
+    sta v2+0
+    ldx v2+1
     rts
 
 

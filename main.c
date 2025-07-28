@@ -30,6 +30,14 @@ uint8_t logo[] = {
   0x00, 0x80, 0x00, 0x80, 0x00, 0x80, 0x00, 0x80, 0x00, 0xe0, 0x00, 0xe0
 };
 
+uint8_t test1[] = {
+    0x60,0x00,0x61,0x00,0x63,0x0F,0xF3,0x29,0xD0,0x15,0x12,0x0A
+};
+
+uint8_t test2[] = {
+    0x60,0x00,0x61,0x00,0x63,0x0F,0xF3,0x29,0xD0,0x15,0xD0,0x15,0x12,0x0C
+};
+
 void parse_args(char* cmd) {
     char *p2;
     p2 = strtok(cmd, " ");
@@ -46,22 +54,14 @@ void main(void) {
     SEI();
     vdp_reset();
     vdp_colorize(VDP_BLACK);
-
-    for (j=0;j<8;++j) {
-        for (i=0;i<64;++i)
-            vdp_plot_xy(i, j, VDP_GRAY);
-    }
-    for (j=40;j<48;++j) {
-        for (i=0;i<64;++i)
-            vdp_plot_xy(i, j, VDP_GRAY);
-    }
     CLI();
+
     vdp_wait();
-    vdp_flush();
+    vdp_flush(&FRAMEBUF);
 
     srand(1);
     chip = chip8_init();
-    memcpy(&chip->ram[0x200], logo, 132);
+    memcpy(&chip->ram[0x200], logo, sizeof(logo));
     printf("\n");
     /*
     * Process chip8 loop

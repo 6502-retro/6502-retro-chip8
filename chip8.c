@@ -32,8 +32,8 @@ uint16_t tmp, I, pc = 0;
 uint8_t sp,delay,sound = 0;
 uint8_t V[16] = {0};
 
-void invalid(uint16_t instr) {
-	printf("Invalid instruction: 0x%04X\n", instr);
+void invalid(char op, uint16_t instr) {
+	printf("[0x%X] Invalid instruction: 0x%04X\n", op, instr);
 	sfos_s_warmboot();
 }
 Chip8* chip8_init() {
@@ -53,59 +53,24 @@ void chip8_destroy(Chip8 *chip) {
 	free(chip);
 }
 
-// write a pixel into the frame buffer
-// XOR the value that's there.
-uint8_t chip8_plot_xy(Chip8 *chip, uint8_t x, uint8_t y, bool p) {
-	uint16_t addr = (y*64)+x;
-	uint8_t b = chip->fb[addr];
-
-	chip->fb[addr] = b^p;
-	if (!chip->fb[addr])
-		return 1;
-	else
-		return 0;
-}
-
 uint8_t chip8_draw_sprite(Chip8 *chip, uint8_t x, uint8_t y, uint8_t n) {
-	uint8_t collision = false;
-	uint8_t row = 0;
-	uint8_t p = 0;
+	static uint8_t collision = 0;
+	static uint8_t row = 0;
+	static uint8_t p = 0;
 
 	while (n > 0) {
 		row = chip->ram[I + --n];
-		for (p=8; p>0; --p) {
-			if (chip8_plot_xy(chip, x+p, y+n, row & 1 ))
-				collision = 1;
+		for (p=8; p>0; p--) {
+			if (row & 1)
+				collision = vdp_plot_xy(x+p-1, y+n, VDP_WHITE);
+			else
+				collision = vdp_plot_xy(x+p-1, y+n, VDP_BLACK);
 			row >>= 1;
 		}
 	}
 	return collision;
 }
 
-void chip8_render(Chip8 *chip) {
-	// chip->fb contains 64x32 pixels.
-	uint8_t x = 0;
-	uint8_t y = 0;
-	uint16_t addr = 0;
-	for (x=0; x<64; ++x) {
-		for (y=0; y<32; ++y) {
-			addr = (y*64)+x;
-			if (chip->fb[addr]) {
-				vdp_plot_xy(x, y+8, VDP_WHITE);
-			}
-			else {
-				vdp_plot_xy(x, y+8, VDP_BLACK);
-			}
-		}
-	}
-}
-
-void chip8_clear(Chip8 *chip) {
-	memset(chip->fb, 0, 2048);
-	chip8_render(chip);
-	vdp_wait();
-	vdp_flush();
-}
 
 bool chip8_test_key(uint8_t k) {
 	uint8_t s = sfos_c_status();
@@ -125,10 +90,10 @@ uint8_t chip8_get_key() {
 	}
 }
 
-void debug_regs(uint8_t *p) {
+void debug_regs() {
 	uint8_t i=0;
 	for (i=0; i<16; ++i) {
-		printf("v[%02X] = 0x%02X ", i, *p);
+		printf("v[%02X] = 0x%02X ", i, V[i]);
 	}
 }
 void chip8_run(Chip8 *chip) {
@@ -144,13 +109,15 @@ void chip8_run(Chip8 *chip) {
 		uint8_t x    = (instr & 0x0F00) >> 8; 	// -?--
 		uint8_t y    = (instr & 0x00F0) >> 4; 	// --?-
 		uint8_t kk   = instr & 0x00FF;		  	// --??
+
 #if 0
 		printf("PC: 0x%03X, Inst: 0x%04X, op: 0x%1X, x: 0x%1X, y: 0x%01X, n: 0x%1X, kk: 0x%02X, nnn: 0x%03X\n", pc, instr, op, x, y, n, kk, nnn);
-		printf("\t\t REGS: ");
-		debug_regs(V);
+		printf("\t REGS: ");
+		debug_regs();
 		printf("\n");
-		printf(" \t\t i:0x%03X, delay:0x%02X, sound:0x%02X\n", I, delay, sound);
+		printf("\t i:0x%03X, delay:0x%02X, sound:0x%02X\n", I, delay, sound);
 #endif
+
 		pc += 2;
 		if (pc >= 4096)
 			pc = 512;		// Wrap around to start of program space
@@ -160,7 +127,7 @@ void chip8_run(Chip8 *chip) {
 			case 0:
 				if (nnn==0x0E0) {
 					// clear screen
-					chip8_clear(chip);
+					vdp_clear_pattern_table(chip);
 					break;
 				} else if (nnn==0x0EE) {
 					// Return from subroutine
@@ -194,14 +161,17 @@ void chip8_run(Chip8 *chip) {
 					pc += 2;
 				break;
 			case 5:
-				if (n==0) {
-					if (x==y)
-						pc += 2;
-					break;
-				} else {
-					invalid(instr);
-					break;
+				{
+					if (n==0) {
+						if (x==y)
+							pc += 2;
+						break;
+					} else {
+						invalid(5, instr);
+						break;
+					}
 				}
+				break;
 			case 6:
 				// Vx = kk
 				V[x] = kk;
@@ -270,7 +240,7 @@ void chip8_run(Chip8 *chip) {
 						V[x] = V[x] << 1;
 						break;
 					default:
-						invalid(instr);
+						invalid(8, instr);
 						break;
 				}
 				break;
@@ -279,66 +249,69 @@ void chip8_run(Chip8 *chip) {
 				if (V[x] != V[y])
 					pc += 2;
 				break;
-			case 10: //A
+			case 0xA: //A
 				// I = nnn
 				I = nnn;
 				break;
-			case 11: // B
+			case 0xB: // B
 				// jmp to nnn + V0
 				pc = (nnn + V[0]) & 0xFFF;
 				break;
-			case 12: // C
+			case 0xC: // C
 				// Vx == RAND() & kk;
 				V[x] = (rand() & 0xFF) & kk;
 				break;
-			case 13: // D
+			case 0xD: // D
 				// DRW Vx, Vy, n - Display n byte sprite at vx,vy VF set on
 				// collision.
 				V[0xF] = chip8_draw_sprite(chip, V[x], V[y], n);
 				drawflag = true;
 				break;
-			case 14: // E
+			case 0xE: // E
 				break;
-			case 15: // F
-				switch (kk) {
-					case 0x07:
-						// Vx = delay
-						V[x] = delay;
-						break;
-					case 0x0A:
-						// wait for keypress
-						V[x] = chip8_get_key();
-						break;
-					case 0x15:
-						delay = V[x];
-						break;
-					case 0x18:
-						sound = V[x];
-						break;
-					case 0x1E:
-						I = (I + V[x]) & 0xFFF;
-						break;
-					case 0x29:
-						I = V[x] * 5; // font is at 0x000
-						break;
-					case 0x33:
-						chip->ram[I] = V[x] / 100;
-						chip->ram[I+1] = (V[x] / 10) % 10;
-						chip->ram[I+2] = V[x] % 10;
-						break;
-					case 0x55:
-						memcpy(&chip->ram[I], V, x+1);
-						break;
-					case 0x65:
-						// Read registers from ram into v0 to vx
-						memcpy(V, &chip->ram[I], x+1);
-						break;
-					default:
-						invalid(instr);
-						break;
+			case 0xF: // F
+				{
+					switch (kk) {
+						case 0x07:
+							// Vx = delay
+							V[x] = delay;
+							break;
+						case 0x0A:
+							// wait for keypress
+							V[x] = chip8_get_key();
+							break;
+						case 0x15:
+							delay = V[x];
+							break;
+						case 0x18:
+							sound = V[x];
+							break;
+						case 0x1E:
+							I = (I + V[x]) & 0xFFF;
+							break;
+						case 0x29:
+							I = V[x] * 5; // font is at 0x000
+							break;
+						case 0x33:
+							chip->ram[I] = V[x] / 100;
+							chip->ram[I+1] = (V[x] / 10) % 10;
+							chip->ram[I+2] = V[x] % 10;
+							break;
+						case 0x55:
+							memcpy(&chip->ram[I], V, x+1);
+							break;
+						case 0x65:
+							// Read registers from ram into v0 to vx
+							memcpy(V, &chip->ram[I], x+1);
+							break;
+						default:
+							invalid(0xF, instr);
+							break;
+					}
+					break;
 				}
 			default:
-				invalid(instr);
+				invalid(-1, instr);
 				break;
 		}
 		vdp_wait();
@@ -352,11 +325,11 @@ void chip8_run(Chip8 *chip) {
 		}
 
 		if (drawflag) {
-			chip8_render(chip);
-			vdp_flush();
+			vdp_flush(&FRAMEBUF);
 			drawflag = false;
 		}
 		if (sfos_c_status() == 0x1b)
 			chip->is_running = false;
+
 	}
 }
