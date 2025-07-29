@@ -29,8 +29,11 @@ uint8_t hexfont[80] = {
 };
 
 uint16_t tmp, I, pc = 0;
-uint8_t sp,delay,sound = 0;
+uint8_t delay,sound,sp = 0;
 uint8_t V[16] = {0};
+uint8_t key = 0;
+bool drawflag = 0;
+
 
 void invalid(char op, uint16_t instr) {
 	printf("[0x%X] Invalid instruction: 0x%04X\n", op, instr);
@@ -45,6 +48,7 @@ Chip8* chip8_init() {
 		memcpy(chip->ram, hexfont, 80);
 		pc = 0x200;
 		sp = 0;
+		I = 0;
 		return chip;
 	}
 };
@@ -57,25 +61,22 @@ uint8_t chip8_draw_sprite(Chip8 *chip, uint8_t x, uint8_t y, uint8_t n) {
 	static uint8_t collision = 0;
 	static uint8_t row = 0;
 	static uint8_t p = 0;
-
+	uint8_t i = 0;
 	while (n > 0) {
 		row = chip->ram[I + --n];
-		for (p=8; p>0; p--) {
+		p = 7;
+		for (i=0; i<8; ++i) {
 			if (row & 1)
-				collision = vdp_plot_xy(x+p-1, y+n, VDP_WHITE);
+				collision = vdp_plot_xy(x+p, y+n, VDP_WHITE);
 			else
-				collision = vdp_plot_xy(x+p-1, y+n, VDP_BLACK);
+				collision = vdp_plot_xy(x+p, y+n, VDP_BLACK);
 			row >>= 1;
+			p--;
 		}
 	}
 	return collision;
 }
 
-
-bool chip8_test_key(uint8_t k) {
-	uint8_t s = sfos_c_status();
-	return s == k;
-}
 
 uint8_t chip8_get_key() {
 	uint8_t k = 0;
@@ -93,11 +94,19 @@ uint8_t chip8_get_key() {
 void debug_regs() {
 	uint8_t i=0;
 	for (i=0; i<16; ++i) {
-		printf("v[%02X] = 0x%02X ", i, V[i]);
+		printf("\t\tv[%02X] = 0x%02X\n", i, V[i]);
+	}
+}
+void debug_stack(Chip8 *chip, uint8_t sp) {
+	uint8_t i=0;
+	for (i=0; i<16; ++i) {
+		if (i==sp)
+			printf("\t\t*[%02X] = 0x%04X\n", i, chip->stack[i]);
+		else
+			printf("\t\t[%02X] = 0x%04X\n", i, chip->stack[i]);
 	}
 }
 void chip8_run(Chip8 *chip) {
-	bool drawflag = 0;
 
 	while (chip->is_running) {
 		// read two big endian bytes at PC
@@ -111,11 +120,13 @@ void chip8_run(Chip8 *chip) {
 		uint8_t kk   = instr & 0x00FF;		  	// --??
 
 #if 0
-		printf("PC: 0x%03X, Inst: 0x%04X, op: 0x%1X, x: 0x%1X, y: 0x%01X, n: 0x%1X, kk: 0x%02X, nnn: 0x%03X\n", pc, instr, op, x, y, n, kk, nnn);
-		printf("\t REGS: ");
+		printf("PC: 0x%03X, Inst: 0x%04X, op: 0x%1X, x: 0x%1X, y: 0x%01X, n: 0x%1X, kk: 0x%02X, nnn: 0x%03X", pc, instr, op, x, y, n, kk, nnn);
+		printf("\n\tREGS:\n");
 		debug_regs();
+		printf("\n\t i:0x%03X, delay:0x%02X, sound:0x%02X\n", I, delay, sound);
+		printf("\n\tSTACK: \n");
+		debug_stack(chip, sp);
 		printf("\n");
-		printf("\t i:0x%03X, delay:0x%02X, sound:0x%02X\n", I, delay, sound);
 #endif
 
 		pc += 2;
@@ -125,39 +136,36 @@ void chip8_run(Chip8 *chip) {
 
 		switch (op) {
 			case 0:
-				if (nnn==0x0E0) {
-					// clear screen
-					vdp_clear_pattern_table(chip);
-					break;
-				} else if (nnn==0x0EE) {
-					// Return from subroutine
-					pc = chip->stack[sp];
-					sp --;
-					break;
+				switch (kk) {
+					case 0xE0:
+						vdp_clear_pattern_table();
+						break;
+					case 0xEE:
+						--sp;
+						pc = chip->stack[sp];
+						break;
+					default:
+						invalid(0, instr);
 				}
-				else {
-					// jump to subroutine
-					pc = nnn;
-					break;
-				}
+				break;
 			case 1:
 				// Jump
 				pc = nnn;
 				break;
 			case 2:
 				// call
-				sp ++;
 				chip->stack[sp] = pc;
+				++sp;
 				pc = nnn;
 				break;
 			case 3:
-				// if Vx == byte then skip next instruction.
-				if (x == kk)
+				// if Vx != byte then skip next instruction.
+				if (V[x] == kk)
 					pc += 2;
 				break;
 			case 4:
-				// if Vx != byte then skip next instruction.
-				if (x != kk)
+				// if Vx == byte then skip next instruction.
+				if (V[x] != kk)
 					pc += 2;
 				break;
 			case 5:
@@ -231,7 +239,7 @@ void chip8_run(Chip8 *chip) {
 							V[0xF] = 0;
 						V[x] = V[y] - V[x];
 						break;
-					case 8:
+					case 14:
 						// Vx = Vx << 1, VF has most significant bit
 						if (V[x] >> 7)
 							V[0xF] = 1;
@@ -268,7 +276,21 @@ void chip8_run(Chip8 *chip) {
 				drawflag = true;
 				break;
 			case 0xE: // E
-				break;
+				{
+					switch(kk) {
+						case 0x9E:
+							if (key != V[x])
+								pc += 2;
+							break;
+						case 0xA1:
+							if (key == V[x])
+								pc += 2;
+							break;
+						default:
+							invalid(9, instr);
+					}
+					break;
+				}
 			case 0xF: // F
 				{
 					switch (kk) {
@@ -293,9 +315,13 @@ void chip8_run(Chip8 *chip) {
 							I = V[x] * 5; // font is at 0x000
 							break;
 						case 0x33:
-							chip->ram[I] = V[x] / 100;
-							chip->ram[I+1] = (V[x] / 10) % 10;
-							chip->ram[I+2] = V[x] % 10;
+							tmp = V[x];
+							chip->ram[I+0] = (tmp - (tmp % 100))/100;
+							tmp -= chip->ram[I+0] * 100;
+							chip->ram[I+1] = (tmp - (tmp % 10))/10;
+							tmp -= chip->ram[I+1] * 10;
+							chip->ram[I+2] = tmp;
+							//printf("%d%d%d\n",chip->ram[I+0],chip->ram[I+1],chip->ram[I+2]);
 							break;
 						case 0x55:
 							memcpy(&chip->ram[I], V, x+1);
@@ -314,22 +340,16 @@ void chip8_run(Chip8 *chip) {
 				invalid(-1, instr);
 				break;
 		}
-		//vdp_wait();
-
-		if (delay > 0) {
-			delay -= 1;
-		}
-
-		if (sound > 0) {
-			sound -= 1;
-		}
-
-		if (drawflag) {
-			vdp_flush(&FRAMEBUF);
-			drawflag = false;
-		}
-		if (sfos_c_status() == 0x1b)
-			chip->is_running = false;
-
+		key = sfos_c_status();
+		if (key == 0x1b) chip->is_running = false;
+		//if ( '0' <= key <= '9')
+		//	key -= '0';
+		//else if ( 'a' <= key <= 'f' )
+		//	key-='a';
+		//else if ( 'A' <= key <= 'F' )
+		//	key-='A';
+		//else if (key == 0x1b)
+		//	chip->is_running = false;
+		else key = 0;
 	}
 }

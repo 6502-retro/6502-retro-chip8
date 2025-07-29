@@ -4,7 +4,7 @@
 .include "macro.inc"
 
 .export _vdp_reset, _vdp_set_write_addr, _vdp_set_read_addr, _vdp_wait
-.export _vdp_flush, _vdp_xy_to_offset, _vdp_clear_pattern_table
+.export _vdp_flush, _vdp_xy_to_offset, _vdp_clear_pattern_table, _prog_exit
 
 .autoimport
 
@@ -56,6 +56,23 @@ _vdp_reset:
 
     dec v1+0
     bne @lpsection
+
+    lda bios_userirq_vec + 0
+    sta old_irq_vec + 0
+    lda bios_userirq_vec + 1
+    sta old_irq_vec + 1
+
+    lda #<interrupt
+    sta bios_userirq_vec + 0
+    lda #>interrupt
+    sta bios_userirq_vec + 1
+    rts
+
+_prog_exit:
+    lda old_irq_vec + 0
+    sta bios_userirq_vec + 0
+    lda old_irq_vec + 1
+    sta bios_userirq_vec + 1
     rts
 
 ; Zero out all 16KB of VRAM.
@@ -84,7 +101,7 @@ _vdp_flush:
     lda #<VDP_PATTERN
     ldx #>VDP_PATTERN
     jsr _vdp_set_write_addr
-    ldx #4
+    ldx #$06
     ldy #0
 @lp:
     lda (v1),y
@@ -137,7 +154,7 @@ _vdp_xy_to_offset:
     sta v2+1  ; Y / 8 (saved into high byte which means *256)
     tya
     and #$07    ; Y mod 8
-    sta v3+0 
+    sta v3+0
     txa
     lsr         ; X / 2
     asl
@@ -183,6 +200,22 @@ _init_regs:
     cpy #8                  ; there are 8 registers altogether 0-7
     bne :-                  ; loop until complete.
     rts
+
+interrupt:
+    lda _delay
+    beq :+
+    dec _delay
+:   lda _sound
+    beq :+
+    dec _sound
+:   lda _drawflag
+    beq :+
+    lda #<$A000
+    ldx #>$A000
+    jsr _vdp_flush
+:   rts
+
+old_irq_vec: .word 0
 
 .rodata
 ; These are the registers for the multicolour mode

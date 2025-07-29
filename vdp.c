@@ -5,19 +5,7 @@
 extern uint16_t i;
 char *framebuf = &FRAMEBUF;
 
-void vdp_off() {
-    SEI();
-    VDP_REG=0xA8;
-    VDP_REG=0x81;
-    CLI();
-}
 
-void vdp_on() {
-    SEI();
-    VDP_REG=0xE8;
-    VDP_REG=0x81;
-    CLI();
-}
 
 uint8_t vdp_plot_xy(uint8_t x, uint8_t y, uint8_t c) {
     static uint8_t dot = 0;
@@ -27,8 +15,12 @@ uint8_t vdp_plot_xy(uint8_t x, uint8_t y, uint8_t c) {
     char collide = 0;
 
     //addr = (8 * (x / 2)) + (y % 8) + (256 * (y / 8));
+    if (x>63) x=63;
+    if (y>47) y=47;
+
     addr = vdp_xy_to_offset(x<<8|y);
     dot = framebuf[addr];
+
     if (x & 1) // Odd columns
     {
         // -X
