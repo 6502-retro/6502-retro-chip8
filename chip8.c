@@ -103,26 +103,25 @@ uint8_t wait_for_key() {
 	do {
 		if (k != 0) {
 			switch (k) {
-				case '1':  return 0x1; break;
-				case '2':  return 0x2; break;
-				case '3':  return 0x3; break;
-				case '4':  return 0xc; break;
-				case 'q':  return 0x4; break;
-				case 'w':  return 0x5; break;
-				case 'e':  return 0x6; break;
-				case 'r':  return 0xd; break;
-				case 'a':  return 0x7; break;
-				case 's':  return 0x8; break;
-				case 'd':  return 0x9; break;
-				case 'f':  return 0xe; break;
-				case 'z':  return 0xa; break;
-				case 'x':  return 0x0; break;
-				case 'c':  return 0xb; break;
-				case 'v':  return 0xf; break;
+				case '1':  return 0x1;
+				case '2':  return 0x2;
+				case '3':  return 0x3;
+				case '4':  return 0xc;
+				case 'q':  return 0x4;
+				case 'w':  return 0x5;
+				case 'e':  return 0x6;
+				case 'r':  return 0xd;
+				case 'a':  return 0x7;
+				case 's':  return 0x8;
+				case 'd':  return 0x9;
+				case 'f':  return 0xe;
+				case 'z':  return 0xa;
+				case 'x':  return 0x0;
+				case 'c':  return 0xb;
+				case 'v':  return 0xf;
 			}
 		}
 	} while (k == 0);
-	
 }
 void update_keys() {
 	k = bios_const();
