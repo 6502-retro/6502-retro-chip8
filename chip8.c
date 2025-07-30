@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include "sfos.h"
+#include "bios.h"
 #include "vdp.h"
 #include "chip8.h"
 
@@ -37,7 +37,8 @@ bool drawflag = 0;
 
 void invalid(char op, uint16_t instr) {
 	printf("[0x%X] Invalid instruction: 0x%04X\n", op, instr);
-	sfos_s_warmboot();
+	prog_exit();
+	bios_wboot();
 }
 Chip8* chip8_init() {
 	Chip8 *chip = (Chip8*)malloc(sizeof(struct s_chip8));
@@ -78,19 +79,6 @@ uint8_t chip8_draw_sprite(Chip8 *chip, uint8_t x, uint8_t y, uint8_t n) {
 }
 
 
-uint8_t chip8_get_key() {
-	uint8_t k = 0;
-	while (1) {
-		k = sfos_c_status();
-		if ( '0' <= k <= '9')
-			return k-'0';
-		if ( 'a' <= k <= 'f' )
-			return k-'a';
-		if ( 'A' <= k <= 'F' )
-			return k-'A';
-	}
-}
-
 void debug_regs() {
 	uint8_t i=0;
 	for (i=0; i<16; ++i) {
@@ -106,6 +94,58 @@ void debug_stack(Chip8 *chip, uint8_t sp) {
 			printf("\t\t[%02X] = 0x%04X\n", i, chip->stack[i]);
 	}
 }
+static bool keys[16] = {0};
+static uint8_t k = 0;
+
+uint8_t wait_for_key() {
+
+	k = bios_const();
+	do {
+		if (k != 0) {
+			switch (k) {
+				case '1':  return 0x1; break;
+				case '2':  return 0x2; break;
+				case '3':  return 0x3; break;
+				case '4':  return 0xc; break;
+				case 'q':  return 0x4; break;
+				case 'w':  return 0x5; break;
+				case 'e':  return 0x6; break;
+				case 'r':  return 0xd; break;
+				case 'a':  return 0x7; break;
+				case 's':  return 0x8; break;
+				case 'd':  return 0x9; break;
+				case 'f':  return 0xe; break;
+				case 'z':  return 0xa; break;
+				case 'x':  return 0x0; break;
+				case 'c':  return 0xb; break;
+				case 'v':  return 0xf; break;
+			}
+		}
+	} while (k == 0);
+	
+}
+void update_keys() {
+	k = bios_const();
+	switch(k) {
+		case '1': keys[0x01] = (keys[0x01]) ? false : true; break;
+		case '2': keys[0x02] = (keys[0x02]) ? false : true; break;
+		case '3': keys[0x03] = (keys[0x03]) ? false : true; break;
+		case '4': keys[0x0c] = (keys[0x0c]) ? false : true; break;
+		case 'q': keys[0x04] = (keys[0x04]) ? false : true; break;
+		case 'w': keys[0x05] = (keys[0x05]) ? false : true; break;
+		case 'e': keys[0x06] = (keys[0x06]) ? false : true; break;
+		case 'r': keys[0x0d] = (keys[0x0d]) ? false : true; break;
+		case 'a': keys[0x07] = (keys[0x07]) ? false : true; break;
+		case 's': keys[0x08] = (keys[0x08]) ? false : true; break;
+		case 'd': keys[0x09] = (keys[0x09]) ? false : true; break;
+		case 'f': keys[0x0e] = (keys[0x0e]) ? false : true; break;
+		case 'z': keys[0x0a] = (keys[0x0a]) ? false : true; break;
+		case 'x': keys[0x00] = (keys[0x00]) ? false : true; break;
+		case 'c': keys[0x0b] = (keys[0x0b]) ? false : true; break;
+		case 'v': keys[0x0f] = (keys[0x0f]) ? false : true; break;
+	}
+}
+
 void chip8_run(Chip8 *chip) {
 
 	while (chip->is_running) {
@@ -279,11 +319,11 @@ void chip8_run(Chip8 *chip) {
 				{
 					switch(kk) {
 						case 0x9E:
-							if (key != V[x])
+							if (keys[V[x]])
 								pc += 2;
 							break;
 						case 0xA1:
-							if (key == V[x])
+							if (!keys[V[x]])
 								pc += 2;
 							break;
 						default:
@@ -300,7 +340,7 @@ void chip8_run(Chip8 *chip) {
 							break;
 						case 0x0A:
 							// wait for keypress
-							V[x] = chip8_get_key();
+							V[x] = wait_for_key();
 							break;
 						case 0x15:
 							delay = V[x];
@@ -340,16 +380,7 @@ void chip8_run(Chip8 *chip) {
 				invalid(-1, instr);
 				break;
 		}
-		key = sfos_c_status();
-		if (key == 0x1b) chip->is_running = false;
-		//if ( '0' <= key <= '9')
-		//	key -= '0';
-		//else if ( 'a' <= key <= 'f' )
-		//	key-='a';
-		//else if ( 'A' <= key <= 'F' )
-		//	key-='A';
-		//else if (key == 0x1b)
-		//	chip->is_running = false;
-		else key = 0;
+		update_keys();
+		if (k == 0x1b) chip->is_running = false;
 	}
 }

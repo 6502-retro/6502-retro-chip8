@@ -5,6 +5,7 @@
 extern void __fastcall__ bios_conout(char c);
 extern uint8_t bios_conin();
 extern uint8_t bios_const();
+extern void bios_wboot();
 extern void __fastcall__ bios_puts(char* s);
 
 extern void bios_led_on();
