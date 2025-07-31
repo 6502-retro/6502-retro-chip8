@@ -19,5 +19,5 @@ $(BUILD_DIR)/$(APPNAME).bin: $(BUILD_DIR)/$(APPNAME).raw
 	$(LOADTRIM) $^ $@ $(LOAD_ADDR)
 
 copy: build/chip8.com
-	../6502-retro-os/py_sfs_v2/cli.py rm -i ../6502-retro-os/py_sfs_v2/6502-retro-sdcard.img -d g://chip8.com
-	../6502-retro-os/py_sfs_v2/cli.py cp -i ../6502-retro-os/py_sfs_v2/6502-retro-sdcard.img -s build/chip8.com -d g://chip8.com
+	../6502-retro-os/py_sfs_v2/cli.py rm -i ../6502-retro-os/py_sfs_v2/6502-retro-sdcard.img -d c://chip8.com
+	../6502-retro-os/py_sfs_v2/cli.py cp -i ../6502-retro-os/py_sfs_v2/6502-retro-sdcard.img -s build/chip8.com -d c://chip8.com

@@ -15,8 +15,8 @@ uint8_t vdp_plot_xy(uint8_t x, uint8_t y, uint8_t c) {
     char collide = 0;
 
     //addr = (8 * (x / 2)) + (y % 8) + (256 * (y / 8));
-    if (x>63) x=63;
-    if (y>47) y=47;
+    x = x & 0x3F;
+    y = y & 0x1F;
 
     addr = vdp_xy_to_offset(x<<8|y);
     dot = framebuf[addr];
