@@ -2,6 +2,8 @@
 #include <stdint.h>
 #include <string.h>
 #include "vdp.h"
+#include "c8_lib.h"
+
 extern uint16_t i;
 char *framebuf = &FRAMEBUF;
 

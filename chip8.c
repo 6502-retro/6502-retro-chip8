@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "bios.h"
+#include "c8_lib.h"
 #include "vdp.h"
 #include "chip8.h"
 
@@ -29,11 +30,11 @@ uint8_t hexfont[80] = {
 };
 
 uint16_t tmp, I, pc = 0;
-uint8_t delay,sound,sp = 0;
+uint8_t delay,sp = 0;
 uint8_t V[16] = {0};
 uint8_t key = 0;
 bool drawflag = 0;
-
+#define sound *(uint8_t*)0x65F
 
 void invalid(char op, uint16_t instr) {
 	printf("[0x%X] Invalid instruction: 0x%04X\n", op, instr);
@@ -50,11 +51,13 @@ Chip8* chip8_init() {
 		pc = 0x200;
 		sp = 0;
 		I = 0;
+		bios_sn_start();
 		return chip;
 	}
 };
 
 void chip8_destroy(Chip8 *chip) {
+	bios_sn_stop();
 	free(chip);
 }
 
@@ -346,6 +349,7 @@ void chip8_run(Chip8 *chip) {
 							break;
 						case 0x18:
 							sound = V[x];
+							sn_play_note();
 							break;
 						case 0x1E:
 							I = (I + V[x]) & 0xFFF;

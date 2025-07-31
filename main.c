@@ -5,6 +5,7 @@
 #include "bios.h"
 #include "sfos.h"
 #include "vdp.h"
+#include "c8_lib.h"
 #include "chip8.h"
 
 Chip8 *chip;

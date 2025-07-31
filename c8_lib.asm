@@ -5,8 +5,20 @@
 
 .export _vdp_reset, _vdp_set_write_addr, _vdp_set_read_addr, _vdp_wait
 .export _vdp_flush, _vdp_xy_to_offset, _vdp_clear_pattern_table, _prog_exit
+.export _sn_play_note
 
 .autoimport
+
+FIRST   = %10000000
+SECOND  = %00000000
+CHAN_1  = %00000000
+CHAN_2  = %00100000
+CHAN_3  = %01000000
+CHAN_N  = %01100000
+TONE    = %00000000
+VOL     = %00010000
+VOL_OFF = %00001111
+VOL_MAX = %00000000
 
 .zeropage
 
@@ -15,10 +27,19 @@ v2: .word 0
 v3: .word 0
 
 .bss
-; This is the framebuffer region in uninitialised BSS memory. It must be page
-; aligned to support more efficient memory transfer into the VDP IO port.
 
 .code
+
+_sn_play_note:
+    lda #$07
+    ora #(FIRST|CHAN_1|TONE)
+    jsr bios_sn_send
+    lda #$04
+    ora #(SECOND|CHAN_1|TONE)
+    jsr bios_sn_send
+    lda #(FIRST|CHAN_1|VOL|$04)
+    jsr bios_sn_send
+    rts
 
 ; reset vdp into MC mode
 _vdp_reset:
@@ -205,9 +226,6 @@ interrupt:
     lda _delay
     beq :+
     dec _delay
-:   lda _sound
-    beq :+
-    dec _sound
 :   lda _drawflag
     beq :+
     lda #<$A000

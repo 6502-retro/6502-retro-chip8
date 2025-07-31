@@ -4,7 +4,7 @@ C_SOURCES = \
 	    chip8.c \
 	    main.c
 AS_SOURCES = \
-	     vdp.asm
+	     c8_lib.asm
 APPNAME = chip8
 
 # DO NOT EDIT THIS
@@ -12,7 +12,7 @@ include Make.rules# Sources and objects
 
 $(BUILD_DIR)/$(APPNAME).raw: $(AS_SOURCES) $(C_SOURCES)
 	mkdir -pv $(BUILD_DIR)
-	$(AS) $(ASFLAGS) -l $(BUILD_DIR)/vdp.lst -o $(BUILD_DIR)/vdp.o vdp.asm
+	$(AS) $(ASFLAGS) -l $(BUILD_DIR)/vdp.lst -o $(BUILD_DIR)/vdp.o c8_lib.asm
 	$(CC) $(CCFLAGS) -O -o $(BUILD_DIR)/$(APPNAME).raw $(C_SOURCES) $(BUILD_DIR)/vdp.o lib/sfoslib.lib 
 
 $(BUILD_DIR)/$(APPNAME).bin: $(BUILD_DIR)/$(APPNAME).raw

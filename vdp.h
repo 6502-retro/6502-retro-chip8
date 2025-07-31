@@ -24,14 +24,6 @@
 #define VDP_GRAY                14
 #define VDP_WHITE               15
 
-extern void vdp_reset();
-extern void __fastcall__ vdp_set_read_addr(uint16_t);
-extern void __fastcall__ vdp_set_write_addr(uint16_t);
-extern uint16_t __fastcall__ vdp_xy_to_offset(uint16_t);
-extern void vdp_clear_pattern_table();
-extern void vdp_wait();
-extern void prog_exit();
-
 uint8_t vdp_plot_xy(uint8_t, uint8_t, uint8_t);
 void vdp_colorize(uint8_t);
 void __fastcall__ vdp_flush(char *);
