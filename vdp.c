@@ -3,6 +3,7 @@
 #include <string.h>
 #include "vdp.h"
 extern uint16_t i;
+extern uint16_t j;
 char *framebuf = &FRAMEBUF;
 
 

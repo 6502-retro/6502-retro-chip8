@@ -101,7 +101,7 @@ _vdp_flush:
     lda #<VDP_PATTERN
     ldx #>VDP_PATTERN
     jsr _vdp_set_write_addr
-    ldx #$06
+    ldx #$04
     ldy #0
 @lp:
     lda (v1),y
