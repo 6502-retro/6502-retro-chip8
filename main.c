@@ -43,7 +43,13 @@ void main(void) {
     vdp_colorize(VDP_BLACK);
     CLI();
 
-    vdp_flush(&FRAMEBUF);
+    // draw dashed line below display area.
+    for (i=0; i<64; ++i)
+    {
+        j = vdp_xy_to_offset(i<<8|32);
+        vdp_set_write_addr(PATTERN_TABLE+j);
+        VDP_RAM = 0xB1;
+    }
 
     srand(1);
     chip = chip8_init();

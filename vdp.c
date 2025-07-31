@@ -5,6 +5,7 @@
 #include "c8_lib.h"
 
 extern uint16_t i;
+extern uint16_t j;
 char *framebuf = &FRAMEBUF;
 
 
@@ -26,26 +27,33 @@ uint8_t vdp_plot_xy(uint8_t x, uint8_t y, uint8_t c) {
     if (x & 1) // Odd columns
     {
         // -X
-        if ( (c == VDP_WHITE) && ( (dot & 0x0F) == VDP_WHITE) )
+        if (c == VDP_WHITE)
         {
-            collide = 1;
-            pix = (dot & 0xF0) | VDP_BLACK;
+            if ((dot & 0x0F) == VDP_WHITE)
+            {
+                collide = 1;
+            }
+            pix = (dot & 0xF0) | ((dot & 0x0F) ^ 0x0F);
         }
         else
         {
-            pix = (dot & 0xF0) | c;
+            pix = dot; // if c is black no change at all.
         }
     }
     else
     {
         // X-
-        if ( (c == VDP_WHITE) && ( (dot>>4) == VDP_WHITE) )
+        if (c == VDP_WHITE)
         {
-            collide = 1;
-            pix = (VDP_BLACK<<4) | (dot & 0x0F);
+            if ((dot>>4) == VDP_WHITE)
+            {
+                collide = 1;
+            }
+            pix = (dot & 0x0F) | ((dot & 0xF0) ^ 0xF0);
         }
-        else {
-            pix = (c << 4) | (dot & 0x0F);
+        else
+        {
+            pix = dot; // if c is black no change at all.
         }
     }
     framebuf[addr] = pix;
