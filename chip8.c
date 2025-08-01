@@ -34,11 +34,14 @@ uint8_t delay,sp = 0;
 uint8_t V[16] = {0};
 uint8_t key = 0;
 bool drawflag = 0;
+
 #define sound *(uint8_t*)0x65F
+
 
 void invalid(char op, uint16_t instr) {
 	printf("[0x%X] Invalid instruction: 0x%04X\n", op, instr);
 	prog_exit();
+	bios_sn_stop();
 	bios_wboot();
 }
 Chip8* chip8_init() {
@@ -102,8 +105,8 @@ static uint8_t k = 0;
 
 uint8_t wait_for_key() {
 
-	k = bios_const();
 	do {
+		k = bios_const();
 		if (k != 0) {
 			switch (k) {
 				case '1':  return 0x1;
@@ -122,9 +125,15 @@ uint8_t wait_for_key() {
 				case 'x':  return 0x0;
 				case 'c':  return 0xb;
 				case 'v':  return 0xf;
+				case 0x1b: {
+					prog_exit();
+					bios_sn_stop();
+					bios_wboot();
+				}
 			}
+			bios_conout(k);
 		}
-	} while (k == 0);
+	} while (true);
 }
 void update_keys() {
 	k = bios_const();
@@ -180,7 +189,8 @@ void chip8_run(Chip8 *chip) {
 			case 0:
 				switch (kk) {
 					case 0xE0:
-						vdp_clear_pattern_table();
+						memset(&FRAMEBUF, 0, 0x400);
+						vdp_flush(&FRAMEBUF);
 						break;
 					case 0xEE:
 						--sp;
@@ -349,7 +359,12 @@ void chip8_run(Chip8 *chip) {
 							break;
 						case 0x18:
 							sound = V[x];
-							sn_play_note();
+							if (V[x] > 0) {
+								sn_play_note();
+							} else {
+								bios_sn_silence();
+							}
+
 							break;
 						case 0x1E:
 							I = (I + V[x]) & 0xFFF;
