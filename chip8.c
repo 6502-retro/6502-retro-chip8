@@ -189,7 +189,7 @@ void chip8_run(Chip8 *chip) {
 			case 0:
 				switch (kk) {
 					case 0xE0:
-						memset(&FRAMEBUF, 0, 0x400);
+						memset(&FRAMEBUF, 0x11, 0x400);
 						vdp_flush(&FRAMEBUF);
 						break;
 					case 0xEE:

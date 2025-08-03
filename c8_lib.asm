@@ -103,7 +103,7 @@ vdp_clear_vram:
     lda #0                  ; A is low byte of vram write address
     ldx #0                  ; X is high byte of vram write address
     jsr _vdp_set_write_addr ; set the starting address to zero.
-    lda #0                  ; A has the value being written to VRAM
+    lda #$11                  ; A has the value being written to VRAM
     ldy #0                  ; Y is the byte counter
     ldx #$3F                ; X is the page counter
 :   sta VDP_RAM             ; save A into vram
