@@ -35,7 +35,7 @@ uint8_t V[16] = {0};
 uint8_t key = 0;
 bool drawflag = 0;
 
-#define sound *(uint8_t*)0x65F
+#define sound *(uint8_t*)0x257
 
 
 void invalid(char op, uint16_t instr) {
